@@ -90,14 +90,13 @@ def get_soups_POOL_from(all_lang_dict):
     return soups
 
 
-def write_csv_from(soups, wikidata_id):
+def write_csv_from_soups(soups, wikidata_id):
     # will make the IMAGES_DB
     # csv in the following format:
     # wikidata_id, lang, lang_http, thumb_img, img
     with open('IMAGES_DB.csv', 'w') as f:
-        for x in all_lang_dict:
-            url = (str(all_lang_dict[x]))
-            thumb_img_dict = get_images_from_url(url, min_width)
+        for soup in soups:
+            thumb_img_dict = get_images_from_soup(url, 70) #min_width=70
             for row in thumb_img_dict:
                 id = wikidata_id
                 lang = str(x)
