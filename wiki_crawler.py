@@ -22,9 +22,9 @@ def get_images_from_soup(soup, min_width=0):
 
 
 def get_images_from_url(url, min_width=0):
+    print("get image from url: url recieved: ",url)
     thumb_img = []
     href = []
-    img = {}
     source_code = requests.get(url)
     plain_text = source_code.text
     soup = BeautifulSoup(plain_text, "html.parser")
@@ -42,7 +42,7 @@ def write_csv(all_lang_dict, wikidata_id, min_width=0):
     # will make the IMAGES_DB
     # csv in the following format:
     # wikidata_id, lang, lang_http, thumb_img, img
-    with open('IMAGES_DB.csv', 'w') as f:
+    with open('IMAGES_DB.csv', 'a') as f:
         for x in all_lang_dict:
             url = (str(all_lang_dict[x]))
             print url
@@ -67,7 +67,9 @@ def write_csv(all_lang_dict, wikidata_id, min_width=0):
 
 
 def get_soups_POOL_from(all_lang_dict):
+    # print("all lang dict received: ",all_lang_dict)
     all_lang_urls = all_lang_dict.values()
+    # print("all lang dict valuesw: ",all_lang_urls)
     htmls = []
     soups = []
     # Make the Pool of workers
@@ -107,7 +109,7 @@ def write_csv_from_soups(soups):
     # will make the IMAGES_DB
     # csv in the following format:
     # wikidata_id, lang, lang_http, thumb_img, img
-    with open('IMAGES_DB.csv', 'w') as f:
+    with open('IMAGES_DB.csv', 'a') as f:
         for soup in soups:
             thumb_img_dict = get_images_from_soup(soup, 70) #min_width=70
             lang,lang_http,id = get_info_from_soup(soup)
@@ -124,17 +126,6 @@ def write_csv_from_soups(soups):
                 print img
 
                 f.write(img + '\n')
-    f.close()
-
-
-def write_csv_thread(all_lang_dict, wikidata_id, min_width=0):
-    # will make the IMAGES_DB
-    # csv in the following format:
-    # wikidata_id, lang, lang_http, thumb_img, img
-    img = []
-    with open('IMAGES_DB.csv', 'w') as f:
-        thumb_img_dict = get_images_from_dict_thread(all_lang_dict, wikidata_id, min_width)
-        f.write(img + '\n')
     f.close()
 
 
@@ -216,8 +207,6 @@ def get_dict_lang_from_wikidata(wikidata_id):
     for link in soup.findAll('span', {"class": "wikibase-sitelinkview-page"}):
         lang.append(link.next.get('hreflang'))
         lang_http.append('https:' + link.next.get('href'))
-    print(lang)
-    print(lang_http)
     all_lang_dict = collections.OrderedDict(sorted(dict(zip(lang, lang_http)).items()))
 
     return all_lang_dict
@@ -227,11 +216,19 @@ def get_soup_from_url(url):
     plain_text = source_code.text
     return BeautifulSoup(plain_text, "html.parser")
 
-# url="www.pudim.com.br"
+url="https://en.wikipedia.org/wiki/Linzeux"
 # soup=get_soup_from_url(url)
 # languages_dict = get_languages_links(soup)
 # wikidata_id = get_wikidata_item_id(soup)
 # write_csv(languages_dict, wikidata_id, 80)
 # soups = get_soups_POOL_from(languages_dict)
 # write_csv_from_soups(soups)
-get_dict_lang_from_wikidata(1)
+#
+# for i in range(3,30):
+#     write_csv(get_dict_lang_from_wikidata(i),i,80)
+#
+for i in range(3,30):
+    soup = get_soups_POOL_from(get_dict_lang_from_wikidata(i))
+    print soup
+dic = get_dict_lang_from_wikidata(3)
+write_csv_from_soups(get_soups_POOL_from(dic))
