@@ -112,7 +112,6 @@ def write_csv_from_soups(soups):
             thumb_img_dict = get_images_from_soup(soup, 70) #min_width=70
             lang,lang_http,id = get_info_from_soup(soup)
             for row in thumb_img_dict:
-                id = wikidata_id
                 thumb_img_http = row
                 img_http = lang_http.split('/w', 2)[0] + thumb_img_dict[row]
                 # print("id", id)
@@ -210,13 +209,29 @@ def get_data(url):
     # print('images'+ (str(get_images(soup))))
     return (get_languages_links(soup))
 
+def get_dict_lang_from_wikidata(wikidata_id):
+    soup = get_soup_from_url("https://www.wikidata.org/wiki/Q" + str(wikidata_id))
+    lang = []
+    lang_http = []
+    for link in soup.findAll('span', {"class": "wikibase-sitelinkview-page"}):
+        lang.append(link.next.get('hreflang'))
+        lang_http.append('https:' + link.next.get('href'))
+    print(lang)
+    print(lang_http)
+    all_lang_dict = collections.OrderedDict(sorted(dict(zip(lang, lang_http)).items()))
 
-url = "https://pt.wikipedia.org/wiki/Pudim"
-source_code = requests.get(url)
-plain_text = source_code.text
-soup = BeautifulSoup(plain_text, "html.parser")
-languages_dict = get_languages_links(soup)
-wikidata_id = get_wikidata_item_id(soup)
+    return all_lang_dict
+
+def get_soup_from_url(url):
+    source_code = requests.get(url)
+    plain_text = source_code.text
+    return BeautifulSoup(plain_text, "html.parser")
+
+# url="www.pudim.com.br"
+# soup=get_soup_from_url(url)
+# languages_dict = get_languages_links(soup)
+# wikidata_id = get_wikidata_item_id(soup)
 # write_csv(languages_dict, wikidata_id, 80)
-soups = get_soups_POOL_from(languages_dict)
-write_csv_from_soups(soups)
+# soups = get_soups_POOL_from(languages_dict)
+# write_csv_from_soups(soups)
+get_dict_lang_from_wikidata(1)
