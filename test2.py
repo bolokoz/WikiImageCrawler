@@ -1,55 +1,26 @@
-#Example2.py
-'''
-A more realistic thread pool example 
-'''
+from bs4 import BeautifulSoup
 
-import time 
-import threading 
-import Queue 
 import urllib2 
+url = urllib2.urlopen("https://zh-yue.wikipedia.org/wiki/%E5%B8%83%E7%94%B8")
 
-class Consumer(threading.Thread): 
-  def __init__(self, queue): 
-    threading.Thread.__init__(self)
-    self._queue = queue 
+content = url.read()
 
-  def run(self):
-    while True: 
-      content = self._queue.get() 
-      if isinstance(content, str) and content == 'quit':
-        break
-      response = urllib2.urlopen(content)
-    print 'Bye byes!'
+soup = BeautifulSoup(content,"html.parser")
+
+link = soup.findAll("html")
+
+lang = ((soup.findAll('html'))[0]).get('lang')
+# lang_http = ((soup.findAll(attrs={"rel":"canonical"})))[0].get('href')
+lang_http = soup.find(rel='canonical').get('href')
+print lang_http
 
 
-def Producer():
-  urls = [
-    'http://www.python.org', 'http://www.yahoo.com'
-    'http://www.scala.org', 'http://www.google.com'
-    # etc.. 
-  ]
-  queue = Queue.Queue()
-  worker_threads = build_worker_pool(queue, 4)
-  start_time = time.time()
+# for id in soup.find(id='t-wikibase'):
+#     wikidata_link = (id.get('href'))
+# wikidata_id = wikidata_link.split('/', 4)[4]
+wikidata_link = soup.find(id='t-wikibase').next.get('href')
+wikidata_id = wikidata_link.split('/', 4)[4]
 
-  # Add the urls to process
-  for url in urls: 
-    queue.put(url)  
-  # Add the poison pillv
-  for worker in worker_threads:
-    queue.put('quit')
-  for worker in worker_threads:
-    worker.join()
-
-  print 'Done! Time taken: {}'.format(time.time() - start_time)
-
-def build_worker_pool(queue, size):
-  workers = []
-  for _ in range(size):
-    worker = Consumer(queue)
-    worker.start() 
-    workers.append(worker)
-  return workers
-
-if __name__ == '__main__':
-  Producer()
+print("lang", lang)
+print("lang_http", lang_http)
+print("wikidata", wikidata_id)

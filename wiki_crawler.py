@@ -5,13 +5,14 @@ __author__ = 'Yuri'
 import requests
 import thread
 from bs4 import BeautifulSoup
+import collections
 
 
 def get_images_from_soup(soup, min_width=0):
     thumb_img = []
     href = []
     for link in soup.findAll('a', {'class': 'image'}):
-        if (int(link.next.get('width')) > min_width):
+        if(int(link.next.get('width')) > min_width):
             thumb_img.append(str('https:' + link.next.get('src')))
             href.append(str(link.get('href')))
     # print ("Found %d images:" % (len(href)))
@@ -44,6 +45,7 @@ def write_csv(all_lang_dict, wikidata_id, min_width=0):
     with open('IMAGES_DB.csv', 'w') as f:
         for x in all_lang_dict:
             url = (str(all_lang_dict[x]))
+            print url
             thumb_img_dict = get_images_from_url(url, min_width)
             for row in thumb_img_dict:
                 id = wikidata_id
@@ -58,7 +60,7 @@ def write_csv(all_lang_dict, wikidata_id, min_width=0):
                 # print("img_http",img_http)
                 seq = (id, lang, lang_http, thumb_img_http, img_http)
                 img = ';'.join(seq)
-                print img
+                # print img
 
                 f.write(img + '\n')
     f.close()
@@ -66,7 +68,6 @@ def write_csv(all_lang_dict, wikidata_id, min_width=0):
 
 def get_soups_POOL_from(all_lang_dict):
     all_lang_urls = all_lang_dict.values()
-    print all_lang_urls
     htmls = []
     soups = []
     # Make the Pool of workers
@@ -89,18 +90,29 @@ def get_soups_POOL_from(all_lang_dict):
 
     return soups
 
+def get_info_from_soup(soup):
+    #gets lang,link to lang, wikidata_id
+    lang = ((soup.findAll('html'))[0]).get('lang')
+    # lang_http = ((soup.findAll(attrs={"rel":"canonical"})))[0].get('href')
+    lang_http = soup.find(rel='canonical').get('href')
+    # for id in soup.find(id='t-wikibase'):
+    #     wikidata_link = (id.get('href'))
+    # wikidata_id = wikidata_link.split('/', 4)[4]
+    wikidata_link = soup.find(id='t-wikibase').next.get('href')
+    wikidata_id = wikidata_link.split('/', 4)[4]
 
-def write_csv_from_soups(soups, wikidata_id):
+    return lang,lang_http,wikidata_id
+
+def write_csv_from_soups(soups):
     # will make the IMAGES_DB
     # csv in the following format:
     # wikidata_id, lang, lang_http, thumb_img, img
     with open('IMAGES_DB.csv', 'w') as f:
         for soup in soups:
-            thumb_img_dict = get_images_from_soup(url, 70) #min_width=70
+            thumb_img_dict = get_images_from_soup(soup, 70) #min_width=70
+            lang,lang_http,id = get_info_from_soup(soup)
             for row in thumb_img_dict:
                 id = wikidata_id
-                lang = str(x)
-                lang_http = str(all_lang_dict[x])
                 thumb_img_http = row
                 img_http = lang_http.split('/w', 2)[0] + thumb_img_dict[row]
                 # print("id", id)
@@ -163,12 +175,17 @@ def get_wikidata_item_id(soup):
 def get_languages_links(soup):
     language = []
     link = []
+    language.append(((soup.findAll('html'))[0]).get('lang'))
+    # lang_http = ((soup.findAll(attrs={"rel":"canonical"})))[0].get('href')
+    link.append(soup.find(rel='canonical').get('href'))
     for row in soup.findAll('li', {'class': 'interlanguage-link'}):
         language.append(row.next.get('lang'))
         link.append('https:' + row.next.get('href'))
     # print(language)
     # print(link)
-    return (dict(zip(language, link)))
+    all_lang_dict = collections.OrderedDict(sorted(dict(zip(language, link)).items()))
+
+    return all_lang_dict
 
 
     # def get_languages(url):
@@ -201,4 +218,5 @@ soup = BeautifulSoup(plain_text, "html.parser")
 languages_dict = get_languages_links(soup)
 wikidata_id = get_wikidata_item_id(soup)
 # write_csv(languages_dict, wikidata_id, 80)
-get_soups_POOL_from(languages_dict)
+soups = get_soups_POOL_from(languages_dict)
+write_csv_from_soups(soups)
