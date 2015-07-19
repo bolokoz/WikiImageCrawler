@@ -1,40 +1,22 @@
-from bs4 import BeautifulSoup
-import requests
+from Queue import Queue
+from threading import Thread
 
-import urllib2
+def do_stuff(q):
+  while True:
+    print q.get()
+    q.task_done()
 
-url = urllib2.urlopen("https://de.wikipedia.org/wiki/Kategorie:Ort_auf_Usedom")
+q = Queue(maxsize=0)
+num_threads = 10
 
-content = url.read()
+for i in range(num_threads):
+  worker = Thread(target=do_stuff, args=(q,))
+  worker.setDaemon(True)
+  worker.start()
 
-soup = BeautifulSoup(content, "html.parser")
+for x in range(100):
+  q.put(x)
 
-link = soup.findAll("html")
-
-lang = ((soup.findAll('html'))[0]).get('lang')
-# lang_http = ((soup.findAll(attrs={"rel":"canonical"})))[0].get('href')
-lang_http = soup.find(rel='canonical').get('href')
-print lang_http
-
-
-# for id in soup.find(id='t-wikibase'):
-#     wikidata_link = (id.get('href'))
-# wikidata_id = wikidata_link.split('/', 4)[4]
-wikidata_link = soup.find(id='t-wikibase').next.get('href')
-wikidata_id = wikidata_link.split('/', 4)[4]
-
-print("lang", lang)
-print("lang_http", lang_http)
-print("wikidata", wikidata_id)
-thumb_img=[]
-href=[]
-for link in soup.findAll('a', {'class': 'image'}):
-    if (int(link.next.get('width')) > 70):
-        thumb_img.append(str('https:' + link.next.get('src')))
-        href.append(str(link.get('href')))
-# print ("Found %d images:" % (len(href)))
-# print "\n".join(thumb_img)
-# print "\n".join(href)
-print (dict(zip(thumb_img, href)))
+q.join()
 
 
